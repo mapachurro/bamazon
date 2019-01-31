@@ -13,7 +13,7 @@ var connection = mysql.createConnection({
 
 connection.connect(function (err) {
     if (err) throw err;
-    IDSearch();
+    allProducts();
 
     // This function gets the ID of the item being searched for.
     function IDSearch() {
@@ -59,7 +59,7 @@ connection.connect(function (err) {
                     IDSearch();
                 }
                 else if (curStock > itemQuantity.itemAmt) {
-                    update();
+                    getTotal(itemID, itemQuantity);
                 }
                 else if (curStock < itemQuantity.itemAmt){
                     console.log("Sorry, we don't have enough of that product. Please select less than " + curStock)
@@ -68,18 +68,71 @@ connection.connect(function (err) {
                 if (err) throw err;
             })
         )
-
     }
+
+    function allProducts() {
+        var query = connection.query(
+            "SELECT * from bamazon.products;",
+            (function (err, res) {
+                if (err) throw err;
+                for (var j = 0; j < res.length; j++){ 
+                    id = res[j].item_id;
+                    name = res[j].product_name;
+                    dept = res[j].department_name;
+                    price = res[j].price;
+                    stock = res[j].stock_quantity;
+                    console.log("\n Item ID: " + id + "\n Product Name: " + name + "\n Department Name: " + dept + "\n Price: " + price + "\n Stock: " + stock );
+                  }
+                IDSearch();
+            })
+        )
+    }
+
+function getTotal(itemID, itemQuantity){
+    var query = connection.query(
+        "SELECT price from bamazon.products WHERE item_id = " + itemID.itemNo + ";",
+        (function (err, res) {
+            if (err) throw err;
+            total = (itemQuantity.itemAmt * res[0].price);
+            console.log("\n The total price for your order is: " + total);
+            update();
+        })
+    )
+}
 
     function update() {
         var query = connection.query(
             "UPDATE bamazon.products SET stock_quantity = stock_quantity - " + itemQuantity.itemAmt + " WHERE item_id = " + itemID.itemNo + ";",
             (function (err, res) {
                 if (err) throw err;
-                console.log(res.affectedRows + " products updated!\n");
-                IDSearch();
+                console.log(res.affectedRows + " product(s) updated!", );
+                console.log("Thanks for shopping!")
+                process.exit();
+
+                // Can't figure out how to get inquirer to work properly for this.
+                // inquirer
+                // .prompt({
+                //     name: "buyagain",
+                //     type: "confirm",
+                //     message: "Your order is complete. Would you like to order again?",
+                //     default: "No"
+                // })
+                // .then(function (answer) {
+                //     switch(answer){
+                //         case "Yes":
+                //         allProducts();
+                //         break;
+                //         case "No":
+                //         console.log("Thanks for shopping!") 
+                //         return;
+                //         break;
+                //         default: 
+
+                //     }
+                // })
             })
         )
+        
     }
 
 });
